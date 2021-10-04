@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -5,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -20,7 +24,8 @@ var (
 
 // Config store the username and password for the scraper
 type Config struct {
-	Username, Password string
+	Username, Password, Port, LoginUrl, ServePath string
+	OpenBrowser                                   bool
 }
 
 // SolarOSReading Data
@@ -121,7 +126,7 @@ func meter(body string) string {
 func getScript() (string, error) {
 	// logs into SolarOS and scrapes the page, returning a usable URL
 	bow := surf.NewBrowser()
-	err := bow.Open("https://solaros.datareadings.com/")
+	err := bow.Open(config.LoginUrl)
 	if err != nil || bow.StatusCode() != 200 {
 		return "", err
 	}
@@ -175,9 +180,9 @@ func query(w http.ResponseWriter, r *http.Request) {
 }
 
 func serve() {
-	log.Println("Starting server on port 3000")
-	http.HandleFunc("/v1/solaros", query)
-	http.ListenAndServe(":3000", nil)
+	log.Println(fmt.Sprintf("Starting server on port %v", config.Port))
+	http.HandleFunc(config.ServePath, query)
+	http.ListenAndServe(fmt.Sprintf(":%v", config.Port), nil)
 }
 func makeJSON() {
 	reading, err := scrape()
@@ -200,9 +205,19 @@ func init() {
 	}
 }
 func main() {
-
+	if config.Username == "" || config.Password == "" {
+		log.Println("Username or Password is missing; please check config.toml")
+		os.Exit(1)
+	}
 	makeJSON()
 	go serve()
+	url := fmt.Sprintf("http://%v:%v%v", GetOutboundIP(), config.Port, config.ServePath)
+	if config.OpenBrowser {
+		log.Println(fmt.Sprintf("Opening %v", url))
+		go openbrowser(url)
+	} else {
+		log.Println(fmt.Sprintf("Access %v to see json data", url))
+	}
 	tickChan := time.NewTicker(time.Second * 30).C
 	for {
 		select {

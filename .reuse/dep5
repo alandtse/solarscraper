@@ -1,0 +1,30 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: SolarOS Scraper
+Upstream-Contact: alandtse <alandtse@gmail.com>
+Source: https://github.com/alandtse/solarscraper
+
+# Sample paragraph, commented out:
+#
+# Files: src/*
+# Copyright: $YEAR $NAME <$CONTACT>
+# License: ...
+
+Files: *.md
+Copyright: Contributors
+License: Apache-2.0
+
+Files: *.mod
+Copyright: Contributors
+License: Apache-2.0
+
+Files: *.sum
+Copyright: Contributors
+License: Apache-2.0
+
+Files: *.toml
+Copyright: Contributors
+License: Apache-2.0
+
+Files: .gitignore
+Copyright: Contributors
+License: Apache-2.0

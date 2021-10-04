@@ -1,0 +1,6 @@
+Username= ""
+Password= ""
+Port= "3000"
+LoginURL= "https://solarnoc.datareadings.com/legacy/login/"
+ServePath= "/v1/solaros"
+OpenBrowser= true
