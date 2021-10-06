@@ -1,6 +1,14 @@
+LoginURL= "https://solarnoc.datareadings.com/legacy/login/" #login url
 Username= ""
 Password= ""
-Port= "3000"
-LoginURL= "https://solarnoc.datareadings.com/legacy/login/"
-ServePath= "/v1/solaros"
-OpenBrowser= true
+Port= "3000" # local http server port
+ServePath= "/v1/solaros" #local http server path to access data
+OpenBrowser= true # whether to open the browser on startup automatically
+RefreshSeconds = 300 # how often to refresh data
+[MQTT]
+Host= "" # mqtt broker host
+Port= "1883" # mqtt broker port
+User= "pi" # mqtt user name
+Pass= "" # mqtt password
+AutoDiscovery = "homeassistant" # autodiscovery channel. HA uses this to discover devices https://www.home-assistant.io/docs/mqtt/discovery/
+Address ="" # address of solar panel system. This is for naming in HA.

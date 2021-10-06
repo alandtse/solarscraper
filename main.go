@@ -23,19 +23,28 @@ var (
 )
 
 // Config store the username and password for the scraper
+type MQTTConfig struct {
+	Host, Port, User, Pass, AutoDiscovery, Address string
+}
+
 type Config struct {
 	Username, Password, Port, LoginUrl, ServePath string
 	OpenBrowser                                   bool
+	RefreshSeconds                                int
+	MQTT                                          MQTTConfig
 }
 
 // SolarOSReading Data
 type SolarOSReading struct {
 	InstantaneousPower string `json:"instant_power"`
 	LifeMeter          string `json:"life_meter"`
-	MoneySaved         string `json:"money_saved"`
-	TreesSaved         string `json:"trees_saved"`
-	OilOffset          string `json:"oil_offset"`
-	CO2Offset          string `json:"co2_offset"`
+	// MoneySaved         string `json:"money_saved"`
+	TreesSaved string `json:"trees_saved"`
+	OilOffset  string `json:"oil_offset"`
+	CO2Offset  string `json:"co2_offset"`
+	// SystemSize string `json:"size"`
+	// Inverter   string `json:"inverter"`
+	LastUpdate int64 `json:"last_update"`
 }
 
 func dataURL(cookie string, page string, watch []string) string {
@@ -67,39 +76,46 @@ func liftPage(body string) string {
 }
 
 func treesSaved(body string) string {
-	// return lifeMeter reading
+	// return treesSaved reading
 	r, _ := regexp.Compile("benefitValue1(.*?)span")
 	str := r.FindString(body)
 	r, _ = regexp.Compile(">(.*?)<")
 	str = r.FindString(str)
 	str = strings.Trim(str, "<>")
+	str = strings.Replace(str, ",", "", -1)
 	return str
 }
 func oilOffset(body string) string {
-	// return lifeMeter reading
+	// return oilOffset reading
 	r, _ := regexp.Compile("benefitValue2(.*?)span")
 	str := r.FindString(body)
 	r, _ = regexp.Compile(">(.*?)<")
 	str = r.FindString(str)
 	str = strings.Trim(str, "<>")
+	str = strings.Replace(str, ",", "", -1)
 	return str
 }
 func co2Offset(body string) string {
-	// return lifeMeter reading
+	// return co2Offset reading
 	r, _ := regexp.Compile("benefitValue3(.*?)span")
 	str := r.FindString(body)
 	r, _ = regexp.Compile(">(.*?)<")
 	str = r.FindString(str)
 	str = strings.Trim(str, "<>")
+	str = strings.Replace(str, ",", "", -1)
 	return str
 }
 func instantMeter(body string) string {
-	// return lifeMeter reading
+	// return instantMeter reading
 	r, _ := regexp.Compile("instantValue(.*?)span")
 	str := r.FindString(body)
 	r, _ = regexp.Compile(">(.*?)<")
 	str = r.FindString(str)
 	str = strings.Trim(str, "<>")
+	str = strings.Replace(str, ",", "", -1)
+	if str == "Offline" {
+		str = "0"
+	}
 	return str
 }
 func dollarsSaved(body string) string {
@@ -120,9 +136,28 @@ func meter(body string) string {
 	r, _ = regexp.Compile(">(.*?)<")
 	str = r.FindString(str)
 	str = strings.Trim(str, "<>")
+	str = strings.Replace(str, ",", "", -1)
 	return str
 }
 
+func size(body string) string {
+	// return size reading
+	r, _ := regexp.Compile("systemSize(.*?)span")
+	str := r.FindString(body)
+	r, _ = regexp.Compile(">(.*?)<")
+	str = r.FindString(str)
+	str = strings.Trim(str, "<>")
+	return str
+}
+func inverter(body string) string {
+	// return inverter reading
+	r, _ := regexp.Compile("inverterType(.*?)span")
+	str := r.FindString(body)
+	r, _ = regexp.Compile(">(.*?)<")
+	str = r.FindString(str)
+	str = strings.Trim(str, "<>")
+	return str
+}
 func getScript() (string, error) {
 	// logs into SolarOS and scrapes the page, returning a usable URL
 	bow := surf.NewBrowser()
@@ -164,11 +199,14 @@ func scrape() (SolarOSReading, error) {
 	if lifemeter != "" {
 		reading.LifeMeter = lifemeter
 	}
-	reading.MoneySaved = dollarsSaved(body)
+	// reading.MoneySaved = dollarsSaved(body)
 	reading.InstantaneousPower = instantMeter(body)
 	reading.TreesSaved = treesSaved(body)
 	reading.OilOffset = oilOffset(body)
 	reading.CO2Offset = co2Offset(body)
+	// reading.SystemSize = size(body)
+	// reading.Inverter = inverter(body)
+	reading.LastUpdate = time.Now().Unix()
 	return reading, nil
 }
 
@@ -196,6 +234,12 @@ func makeJSON() {
 		return
 	}
 	jsonResponse = jsn
+	if config.MQTT.AutoDiscovery != "" {
+		if client == nil || !client.IsConnected() {
+			login()
+		}
+		publish()
+	}
 }
 
 func init() {
@@ -210,15 +254,19 @@ func main() {
 		os.Exit(1)
 	}
 	makeJSON()
-	go serve()
-	url := fmt.Sprintf("http://%v:%v%v", GetOutboundIP(), config.Port, config.ServePath)
-	if config.OpenBrowser {
-		log.Println(fmt.Sprintf("Opening %v", url))
-		go openbrowser(url)
+	if config.ServePath == "" || config.Port == "" {
+		log.Println("ServePath or Port not configured, disabling server")
 	} else {
-		log.Println(fmt.Sprintf("Access %v to see json data", url))
+		go serve()
+		url := fmt.Sprintf("http://%v:%v%v", GetOutboundIP(), config.Port, config.ServePath)
+		if config.OpenBrowser {
+			log.Println(fmt.Sprintf("Opening %v", url))
+			go openbrowser(url)
+		} else {
+			log.Println(fmt.Sprintf("Access %v to see json data", url))
+		}
 	}
-	tickChan := time.NewTicker(time.Second * 30).C
+	tickChan := time.NewTicker(time.Second * time.Duration(config.RefreshSeconds)).C
 	for {
 		select {
 		case <-tickChan:
