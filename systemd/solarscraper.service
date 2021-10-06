@@ -1,0 +1,13 @@
+[Unit]
+Description=solarscraper
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5s
+WorkingDirectory=/home/pi/solarscraper
+ExecStart=/home/pi/solarscraper/v2
+
+[Install]
+WantedBy=multi-user.target
+
