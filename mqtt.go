@@ -139,7 +139,7 @@ func publish_discovery() {
 		payload, err := json.Marshal(&registration)
 		if err == nil {
 			fmt.Println(fmt.Printf("%s: Registering sensor %d -> %s", topic, index, string(payload)))
-			token := client.Publish(topic, 0, false, string(payload))
+			token := client.Publish(topic, 0, true, string(payload))
 			token.Wait()
 			time.Sleep(time.Second)
 		}
