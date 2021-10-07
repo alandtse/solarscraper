@@ -14,6 +14,12 @@ This now includes a MQTT client for communicating with HomeAssistant. Please ena
 5. go run .
 6. Browser should open with json data.
 
+### Raspberry Pi daemon
+1. Follow 1-4 above.
+2. Fill out MQTT section in config.
+3. `go build` should create a binary. In my case `v2`
+4. Modify [solarscraper.service](systemd/solarscraper.service) for system and enable in systemd.
+
 ## License
 
 Apache-2.0 and CC-BY-SA-4.0 ([third-party files](cc-by-sa.go))
