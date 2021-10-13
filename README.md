@@ -22,7 +22,7 @@ This now includes a MQTT client for communicating with [Home Assistant](https://
 
 ### Home Assistant
 1. Enable the MQTT section in the [config file](config.example.toml).
-2. To add an Energy sensor, use the [Integration integration](https://www.home-assistant.io/integrations/integration/) on the current_generation. Lifetime generation appears to be [inaccurate](#2).
+2. To add an Energy sensor, use the [Integration integration](https://www.home-assistant.io/integrations/integration/) on the current_generation. Lifetime generation appears to be [inaccurate](https://github.com/alandtse/solarscraper/issues/2).
 
 ```yaml
   - platform: integration
